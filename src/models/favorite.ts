@@ -5,7 +5,7 @@ class FavoriteModel {
 	public async GetFavListById(id: number): Promise<Favorite | null | undefined> {
 		try {
 			const favListQueryResponse = await client.query(`
-				SELECT * FROM public.favorites WHERE id = '${id}';
+				SELECT * FROM public.favorites WHERE id = ${id};
 			`);
 
 			const favList = favListQueryResponse.rows[0];
@@ -26,6 +26,59 @@ class FavoriteModel {
 
 			return favList;
 		} catch (error) {
+			console.log(error);
+		}
+	}
+
+	public async AddMovieToFavoritesList(fav_id: number, movie_id: string): Promise<Favorite | undefined> {
+		try {
+			await client.query('BEGIN');
+
+			const favList = await this.GetFavListById(fav_id);
+
+			if (!favList) throw new Error();
+
+			const updatedMoviesList = [
+				...favList.movies_list,
+				movie_id,
+			];
+
+			const updatedFavoritesQueryResponse = await client.query(`
+				UPDATE public.favorites SET movies_list = ARRAY [${updatedMoviesList}] WHERE id = ${fav_id} RETURNING *;
+			`);
+
+			const updatedFavorites = updatedFavoritesQueryResponse.rows[0];
+
+			await client.query('COMMIT');
+
+			return updatedFavorites;
+		} catch (error) {
+			await client.query('ROLLBACK');
+			console.log(error);
+		}
+	}
+
+	public async RemoveMovieFromFavoritesList(fav_id: number, movie_id: string): Promise<Favorite | undefined> {
+		try {
+			await client.query('BEGIN');
+
+			const favList = await this.GetFavListById(fav_id);
+
+			if (!favList) throw new Error();
+
+			const updatedMoviesList = favList.movies_list.filter((item) => item !== movie_id);
+
+			const updatedFavoritesQueryResponse = await client.query(`
+				UPDATE public.favorites SET movies_list = ARRAY [${updatedMoviesList}] WHERE id = ${fav_id} RETURNING *;
+			`);
+
+			const updatedFavorites = updatedFavoritesQueryResponse.rows[0];
+
+			await client.query('COMMIT');
+
+			return updatedFavorites;
+		} catch (error) {
+			await client.query('ROLLBACK');
 			console.log(error);
 		}
 	}

@@ -35,7 +35,6 @@ class UserController {
 				token: jwt.sign(newUser, process.env.JWT_SECRET_KEY as string),
 			});
 		} catch (error) {
-			console.log(error);
 			return res.status(400).send({
 				message: 'unexpected error',
 			});

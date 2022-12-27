@@ -56,7 +56,7 @@ class UserModel {
 		}
 	}
 
-	public async DeleteUser(id: number): Promise<boolean | undefined> {
+	public async DeleteUser(id: number): Promise<User | undefined> {
 		try {
 			await client.query('BEGIN');
 
@@ -64,7 +64,8 @@ class UserModel {
 				DELETE FROM public.users WHERE id = ${id} RETURNING *;
 			`);
 
-			const deletedUser = deleteUserQueryResponse.rows[0];
+			const deletedUser: User = deleteUserQueryResponse.rows[0];
+			await favoriteModel.DeleteFavoritesList(deletedUser.fav_list_id);
 
 			await client.query('COMMIT');
 

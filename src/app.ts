@@ -3,6 +3,7 @@ import cors from 'cors';
 import logger from 'morgan';
 
 import { userRoutes } from './routes/user';
+import { favoriteRoutes } from './routes/favorite';
 import { connectDb } from './lib/postgresql-client';
 
 export class App {
@@ -26,5 +27,6 @@ export class App {
 
 	private routes() {
 		this.server.use('/v1/users', userRoutes);
+		this.server.use('/v1/favorites', favoriteRoutes);
 	}
 }
