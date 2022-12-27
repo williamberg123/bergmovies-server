@@ -1,5 +1,9 @@
-import { App } from "./app";
+import dotenv from 'dotenv';
 
-new App().server.listen(5555, () => {
-	console.log('Servidor rodando na porta: http://localhost:5555/')
+dotenv.config();
+
+import { App } from './app';
+
+new App().server.listen(5555, async () => {
+	console.log('running: http://localhost:5555/');
 });
