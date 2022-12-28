@@ -6,13 +6,14 @@ const moviesCollectionRoutes: Router = Router();
 
 moviesCollectionRoutes.post('/create', auth.validate, collectionController.Create);
 
-moviesCollectionRoutes.get('/retrieve_many/users/:id', auth.validate, collectionController.RetrieveUserCollections);
+moviesCollectionRoutes.get('/:id', auth.validate, collectionController.RetrieveOneCollection);
+moviesCollectionRoutes.get('/users/:id', auth.validate, collectionController.RetrieveUserCollections);
 
 moviesCollectionRoutes.patch('/:id/change_title', auth.validate, collectionController.ChangeCollectionTitle);
 moviesCollectionRoutes.patch('/:id/add_movie', auth.validate, collectionController.AddMovie);
 moviesCollectionRoutes.patch('/:id/remove_movie', auth.validate, collectionController.RemoveMovie);
 
 moviesCollectionRoutes.delete('/:id', auth.validate, collectionController.DeleteOneCollection);
-moviesCollectionRoutes.delete('/delete_many/users/:id', auth.validate, collectionController.DeleteAllUserCollections);
+moviesCollectionRoutes.delete('/users/:id', auth.validate, collectionController.DeleteAllUserCollections);
 
 export { moviesCollectionRoutes };

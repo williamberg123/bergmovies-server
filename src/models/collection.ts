@@ -4,26 +4,35 @@ import { client } from '../lib/postgresql-client';
 class CollectionModel {
 	public async CreateNewCollection(ownerId: number, title: string): Promise<Collection | undefined> {
 		try {
-			const newCollectionQueryResponse = await client.query(`
+			const { rows } = await client.query(`
 				INSERT INTO public.collections(title, owner_id) VALUES ('${title}', ${ownerId}) RETURNING *;
 			`);
 
-			const newCollection = newCollectionQueryResponse.rows[0];
-			return newCollection;
+			return rows[0];
 		} catch (error) {
 			console.log(error);
 		}
 	}
 
-	public async FindCollectionById(id: number) {
+	public async FindCollectionById(id: number): Promise<Collection | undefined> {
 		try {
-			const collectionQueryResponse = await client.query(`
+			const { rows } = await client.query(`
 				SELECT * FROM public.collections WHERE id = ${id};
 			`);
 
-			const collection = collectionQueryResponse.rows[0];
+			return rows[0];
+		} catch (error) {
+			console.log(error);
+		}
+	}
 
-			return collection;
+	public async RetrieveOneCollection(id: number): Promise<Collection | undefined> {
+		try {
+			const { rows } = await client.query(`
+				SELECT * FROM public.collections WHERE id = ${id};
+			`);
+
+			return rows[0];
 		} catch (error) {
 			console.log(error);
 		}
@@ -31,27 +40,45 @@ class CollectionModel {
 
 	public async RetrieveAllUserCollections(ownerId: number): Promise<Collection[] | undefined> {
 		try {
-			const userCollectionsQueryResponse = await client.query(`
+			const { rows } = await client.query(`
 				SELECT * FROM public.collections WHERE owner_id = ${ownerId} ORDER BY id ASC;
 			`);
 
-			const userCollections = userCollectionsQueryResponse.rows;
-
-			return userCollections;
+			return rows;
 		} catch (error) {
 			console.log(error);
 		}
 	}
 
-	public async ChangeCollectionTitle(id: number, newTitle: string) {
+	public async ChangeCollectionTitle(id: number, newTitle: string): Promise<Collection | undefined> {
 		try {
-			const collectionQueryResponse = await client.query(`
+			const { rows } = await client.query(`
 				UPDATE public.collections SET title = '${newTitle}' WHERE id = ${id} RETURNING *;
 			`);
 
-			const updatedCollection = collectionQueryResponse.rows[0];
+			return rows[0];
+		} catch (error) {
+			console.log(error);
+		}
+	}
 
-			return updatedCollection;
+	public async DeleteOneCollection(id: number): Promise<Collection | undefined> {
+		try {
+			const { rows } = await client.query(`
+				DELETE FROM public.collections WHERE id = ${id} RETURNING *;
+			`);
+
+			return rows[0];
+		} catch (error) {
+			console.log(error);
+		}
+	}
+
+	public async DeleteAllUserCollections(owner_id: number): Promise<void | undefined> {
+		try {
+			await client.query(`
+				DELETE FROM public.collections WHERE owner_id = ${owner_id};
+			`);
 		} catch (error) {
 			console.log(error);
 		}

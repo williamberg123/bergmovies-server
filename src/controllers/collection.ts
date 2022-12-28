@@ -18,6 +18,24 @@ class CollectionController {
 		}
 	}
 
+	public async RetrieveOneCollection(req: Request, res: Response) {
+		const { id } = req.params;
+
+		if (!id) return res.status(400).send({ message: 'missing or insuficient data' });
+
+		try {
+			const collection = await collectionModel.RetrieveOneCollection(Number(id));
+
+			if (!collection) return res.status(404).send({ message: 'collection not found' });
+
+			return res.status(200).json({
+				collection,
+			});
+		} catch (error) {
+			return res.status(400).send({ message: 'unexpected error' });
+		}
+	}
+
 	public async RetrieveUserCollections(req: Request, res: Response) {
 		const { id } = req.params;
 
@@ -61,11 +79,35 @@ class CollectionController {
 	}
 
 	public async DeleteOneCollection(req: Request, res: Response) {
-		return res.status(400).send();
+		const { id } = req.params;
+
+		if (!id) return res.status(400).send({ message: 'missing or insuficient data' });
+
+		try {
+			const collection = await collectionModel.FindCollectionById(Number(id));
+
+			if (!collection) return res.status(400).send({ message: 'collection not found' });
+
+			await collectionModel.DeleteOneCollection(Number(id));
+
+			return res.status(200).send();
+		} catch (error) {
+			return res.status(400).send({ message: 'unexpected error' });
+		}
 	}
 
 	public async DeleteAllUserCollections(req: Request, res: Response) {
-		return res.status(400).send();
+		const { id } = req.params;
+
+		if (!id) return res.status(400).send({ message: 'missing or insuficient data' });
+
+		try {
+			await collectionModel.DeleteAllUserCollections(Number(id));
+
+			return res.status(200).send();
+		} catch (error) {
+			return res.status(400).send({ message: 'unexpected error' });
+		}
 	}
 }
 

@@ -1,5 +1,6 @@
 import { User } from '../../@types/user';
 import { client } from '../../lib/postgresql-client';
+import { collectionModel } from '../collection';
 import { favoriteModel } from '../favorite';
 import { compareHashAndPassword } from './utils/compareHashAndPassword';
 import { generatePasswordHash } from './utils/generateHash';
@@ -59,6 +60,8 @@ class UserModel {
 	public async DeleteUser(id: number): Promise<User | undefined> {
 		try {
 			await client.query('BEGIN');
+
+			await collectionModel.DeleteAllUserCollections(id);
 
 			const deleteUserQueryResponse = await client.query(`
 				DELETE FROM public.users WHERE id = ${id} RETURNING *;
