@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
+import { userModel } from '../models/user';
 
 class Auth {
 	public async validate(req: Request, res: Response, next: NextFunction) {
@@ -14,9 +15,13 @@ class Auth {
 		const [, token] = authorization.split(' ');
 
 		try {
-			jwt.verify(token, process.env.JWT_SECRET_KEY as string, {
+			const jwtDecoded: JwtPayload = jwt.verify(token, process.env.JWT_SECRET_KEY as string, {
 				complete: true,
 			});
+
+			const user = await userModel.FindUserByColumn('id', jwtDecoded.payload.id);
+
+			if (!user) return res.status(401).send({ message: 'user not found' });
 
 			return next();
 		} catch (error) {

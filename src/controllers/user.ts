@@ -91,14 +91,7 @@ class UserController {
 
 			const [, token] = authorization.split(' ');
 
-			const decodedToken = jwt.decode(token) as User | null;
-
-			if (!decodedToken) {
-				return;
-			}
-
-			const { id } = decodedToken;
-
+			const { id } = jwt.decode(token) as User;
 			const user = await userModel.FindUserByColumn('id', id);
 
 			return res.status(200).json({
@@ -159,14 +152,6 @@ class UserController {
 		if (!id) {
 			return res.status(400).send({
 				message: 'no data',
-			});
-		}
-
-		const user = await userModel.FindUserByColumn('id', id);
-
-		if (!user) {
-			return res.status(409).send({
-				message: 'user not found',
 			});
 		}
 

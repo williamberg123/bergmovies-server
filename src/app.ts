@@ -4,6 +4,7 @@ import logger from 'morgan';
 
 import { userRoutes } from './routes/user';
 import { favoriteRoutes } from './routes/favorite';
+import { moviesCollectionRoutes } from './routes/collection';
 import { connectDb } from './lib/postgresql-client';
 
 export class App {
@@ -28,5 +29,6 @@ export class App {
 	private routes() {
 		this.server.use('/v1/users', userRoutes);
 		this.server.use('/v1/favorites', favoriteRoutes);
+		this.server.use('/v1/collections', moviesCollectionRoutes);
 	}
 }
