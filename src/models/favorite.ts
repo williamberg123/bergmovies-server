@@ -60,21 +60,17 @@ class FavoriteModel {
 
 	public async RemoveMovieFromFavoritesList(fav_id: number, movie_id: string): Promise<Favorite | undefined> {
 		try {
-			await client.query('BEGIN');
-
 			const favList = await this.GetFavListById(fav_id);
-
 			if (!favList) throw new Error();
 
 			const updatedMoviesList = favList.movies_list.filter((item) => item !== movie_id);
+			const value = updatedMoviesList.length ? `ARRAY [${updatedMoviesList}]` : 'DEFAULT';
 
 			const updatedFavoritesQueryResponse = await client.query(`
-				UPDATE public.favorites SET movies_list = ARRAY [${updatedMoviesList}] WHERE id = ${fav_id} RETURNING *;
+				UPDATE public.favorites SET movies_list = ${value} WHERE id = ${fav_id} RETURNING *;
 			`);
 
 			const updatedFavorites = updatedFavoritesQueryResponse.rows[0];
-
-			await client.query('COMMIT');
 
 			return updatedFavorites;
 		} catch (error) {

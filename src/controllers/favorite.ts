@@ -59,7 +59,9 @@ class FavoriteController {
 				return res.status(400).send();
 			}
 
-			return res.status(200).send();
+			return res.status(200).json({
+				favorites: updatedFavorites,
+			});
 		} catch (error) {
 			return res.status(400).send({
 				message: 'cannot add movie to list',
@@ -96,7 +98,9 @@ class FavoriteController {
 				return res.status(400).send();
 			}
 
-			return res.status(200).send();
+			return res.status(200).json({
+				favorites: updatedFavorites,
+			});
 		} catch (error) {
 			return res.status(400).send({
 				message: 'cannot add movie to list',

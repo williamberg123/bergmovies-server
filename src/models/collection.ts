@@ -87,9 +87,12 @@ class CollectionModel {
 			const collection = await this.FindCollectionById(collection_id) as Collection;
 
 			const updatedCollectionMovies = collection.movies_list.filter((item) => item !== movie_id);
+			const value = updatedCollectionMovies.length ? `ARRAY [${updatedCollectionMovies}]` : 'DEFAULT';
 
 			const { rows } = await client.query(`
-				UPDATE public.collections SET movies_list = ARRAY [${updatedCollectionMovies}] WHERE id = ${collection_id}
+				UPDATE public.collections
+				SET movies_list = ${value}
+				WHERE id = ${collection_id}
 				RETURNING *;
 			`);
 
