@@ -71,11 +71,49 @@ class CollectionController {
 	}
 
 	public async AddMovie(req: Request, res: Response) {
-		return res.status(400).send();
+		const { id } = req.params;
+		const { movie_id } = req.body;
+
+		if (!id || !movie_id) return res.status(400).send({ message: 'missing or insuficient data' });
+
+		try {
+			const collection = await collectionModel.FindCollectionById(Number(id));
+			if (!collection) return res.status(400).send({ message: 'collection not found' });
+
+			const alreadyMovieOnTheList = collection.movies_list.find((item) => item === movie_id);
+			if (alreadyMovieOnTheList) return res.status(409).send({ message: 'movie is already on the list' });
+
+			const updatedCollection = await collectionModel.AddMovieToCollection(Number(id), movie_id);
+
+			return res.status(200).json({
+				collection: updatedCollection,
+			});
+		} catch (error) {
+			return res.status(400).send({ message: 'unexpected error' });
+		}
 	}
 
 	public async RemoveMovie(req: Request, res: Response) {
-		return res.status(400).send();
+		const { id } = req.params;
+		const { movie_id } = req.body;
+
+		if (!id || !movie_id) return res.status(400).send({ message: 'missing or insuficient data' });
+
+		try {
+			const collection = await collectionModel.FindCollectionById(Number(id));
+			if (!collection) return res.status(400).send({ message: 'collection not found' });
+
+			const alreadyMovieOnTheList = collection.movies_list.find((item) => item === movie_id);
+			if (!alreadyMovieOnTheList) return res.status(409).send({ message: 'movie is not on the list' });
+
+			const updatedCollection = await collectionModel.RemoveMovieFromCollection(Number(id), movie_id);
+
+			return res.status(200).json({
+				collection: updatedCollection,
+			});
+		} catch (error) {
+			return res.status(400).send({ message: 'unexpected error' });
+		}
 	}
 
 	public async DeleteOneCollection(req: Request, res: Response) {

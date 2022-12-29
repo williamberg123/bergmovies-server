@@ -62,6 +62,43 @@ class CollectionModel {
 		}
 	}
 
+	public async AddMovieToCollection(collection_id: number, movie_id: string): Promise<Collection | undefined> {
+		try {
+			const collection = await this.FindCollectionById(collection_id) as Collection;
+
+			const updatedCollectionMovies = [
+				...collection.movies_list,
+				movie_id,
+			];
+
+			const { rows } = await client.query(`
+				UPDATE public.collections SET movies_list = ARRAY [${updatedCollectionMovies}] WHERE id = ${collection_id}
+				RETURNING *;
+			`);
+
+			return rows[0];
+		} catch (error) {
+			console.log(error);
+		}
+	}
+
+	public async RemoveMovieFromCollection(collection_id: number, movie_id: string): Promise<Collection | undefined> {
+		try {
+			const collection = await this.FindCollectionById(collection_id) as Collection;
+
+			const updatedCollectionMovies = collection.movies_list.filter((item) => item !== movie_id);
+
+			const { rows } = await client.query(`
+				UPDATE public.collections SET movies_list = ARRAY [${updatedCollectionMovies}] WHERE id = ${collection_id}
+				RETURNING *;
+			`);
+
+			return rows[0];
+		} catch (error) {
+			console.log(error);
+		}
+	}
+
 	public async DeleteOneCollection(id: number): Promise<Collection | undefined> {
 		try {
 			const { rows } = await client.query(`
