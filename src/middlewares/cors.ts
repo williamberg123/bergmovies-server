@@ -4,6 +4,7 @@ export const cors = (req: Request, res: Response, next: NextFunction) => {
 	const allowedOrigins = [
 		'http://localhost:3000',
 		'http://10.0.0.106:3000',
+		'https://bergmovies.vercel.app/',
 	];
 
 	const origin = req.header('origin');
