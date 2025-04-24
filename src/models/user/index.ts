@@ -1,15 +1,24 @@
 import { User } from '../../@types/user';
-import { client } from '../../lib/postgresql-client';
+import { client } from '../../database';
 import { collectionModel } from '../collection';
 import { favoriteModel } from '../favorite';
 import { compareHashAndPassword } from './utils/compareHashAndPassword';
 import { generatePasswordHash } from './utils/generateHash';
 
 class UserModel {
-	public async FindUserByColumn(columnName: string, value: string | number): Promise<User | null | undefined> {
+	public async FindUserById(id: string): Promise<User | null | undefined> {
 		const response = await client.query(`
-			SELECT * FROM public.users WHERE ${columnName} = '${value}'
-		`);
+			SELECT * FROM public.users WHERE id = $1
+		`, [id]);
+
+		const user = response.rows[0];
+		return user;
+	}
+
+	public async FindUserByEmail(email: string): Promise<User | null | undefined> {
+		const response = await client.query(`
+			SELECT * FROM public.users WHERE email = $1
+		`, [email]);
 
 		const user = response.rows[0];
 		return user;
@@ -22,8 +31,8 @@ class UserModel {
 			const passwordHash = await generatePasswordHash(password);
 
 			const newUserQueryResponse = await client.query(`
-				INSERT INTO public.users(email, password) VALUES ('${email}', '${passwordHash}') RETURNING *;
-			`);
+				INSERT INTO public.users(email, password) VALUES ($1, $2) RETURNING *;
+			`, [email, passwordHash]);
 
 			const newFavorites = await favoriteModel.CreateFavoritesList();
 
@@ -31,8 +40,8 @@ class UserModel {
 			const favListId = newFavorites?.id;
 
 			const updateNewUserQueryResponse = await client.query(`
-				UPDATE public.users SET fav_list_id = '${favListId}' WHERE id = '${newUser.id}' RETURNING *;
-			`);
+				UPDATE public.users SET fav_list_id = $1 WHERE id = $2 RETURNING *;
+			`, [favListId, newUser.id]);
 
 			const updatedUser = updateNewUserQueryResponse.rows[0];
 
@@ -57,15 +66,31 @@ class UserModel {
 		}
 	}
 
-	public async DeleteUser(id: number): Promise<User | undefined> {
+	public async UpdateUserPassword(user_id: string, new_password: string): Promise<User | null | undefined> {
+		try {
+			const newPasswordHash = await generatePasswordHash(new_password);
+
+			const updateUserQueryResponse = await client.query(`
+				UPDATE public.users SET password = $1 WHERE id = $2 RETURNING *;
+			`, [newPasswordHash, user_id]);
+
+			const user = updateUserQueryResponse.rows[0];
+
+			return user;
+		} catch (error) {
+			console.log(error);
+		}
+	}
+
+	public async DeleteUser(id: string): Promise<User | undefined> {
 		try {
 			await client.query('BEGIN');
 
 			await collectionModel.DeleteAllUserCollections(id);
 
 			const deleteUserQueryResponse = await client.query(`
-				DELETE FROM public.users WHERE id = ${id} RETURNING *;
-			`);
+				DELETE FROM public.users WHERE id = $1 RETURNING *;
+			`, [id]);
 
 			const deletedUser: User = deleteUserQueryResponse.rows[0];
 			await favoriteModel.DeleteFavoritesList(deletedUser.fav_list_id);
@@ -79,17 +104,9 @@ class UserModel {
 		}
 	}
 
-	public async UpdateUserPassword(user_id: number, new_password: string): Promise<User | null | undefined> {
+	public async DeleteAllUsers(): Promise<void> {
 		try {
-			const newPasswordHash = await generatePasswordHash(new_password);
-
-			const updateUserQueryResponse = await client.query(`
-				UPDATE public.users SET password = '${newPasswordHash}' WHERE id = ${user_id} RETURNING *;
-			`);
-
-			const user = updateUserQueryResponse.rows[0];
-
-			return user;
+			await client.query('DELETE FROM public.users');
 		} catch (error) {
 			console.log(error);
 		}

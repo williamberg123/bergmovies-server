@@ -1,11 +1,12 @@
 import express from 'express';
-import cors from 'cors';
+// import cors from 'cors';
 import logger from 'morgan';
 
 import { userRoutes } from './routes/user';
 import { favoriteRoutes } from './routes/favorite';
 import { moviesCollectionRoutes } from './routes/collection';
-import { connectDb } from './lib/postgresql-client';
+import { connectDb } from './database';
+import { cors } from './middlewares/cors';
 
 export class App {
 	public server: express.Application;
@@ -18,10 +19,10 @@ export class App {
 	private async middleware() {
 		await connectDb();
 
-		this.server.use(cors());
 		this.server.use(logger('dev'));
-		this.server.use(express.json());
 		this.server.use(express.urlencoded({ extended: false }));
+		this.server.use(express.json());
+		this.server.use(cors);
 
 		this.routes();
 	}

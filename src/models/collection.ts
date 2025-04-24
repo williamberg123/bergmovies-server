@@ -1,12 +1,13 @@
 import { Collection } from '../@types/collection';
-import { client } from '../lib/postgresql-client';
+import { client } from '../database';
+import { convertJsonArrayToObjectArray } from '../utils';
 
 class CollectionModel {
-	public async CreateNewCollection(ownerId: number, title: string): Promise<Collection | undefined> {
+	public async CreateNewCollection(ownerId: string, title: string): Promise<Collection | undefined> {
 		try {
 			const { rows } = await client.query(`
-				INSERT INTO public.collections(title, owner_id) VALUES ('${title}', ${ownerId}) RETURNING *;
-			`);
+				INSERT INTO public.collections(title, owner_id) VALUES ($1, $2) RETURNING *;
+			`, [title, ownerId]);
 
 			return rows[0];
 		} catch (error) {
@@ -14,35 +15,41 @@ class CollectionModel {
 		}
 	}
 
-	public async FindCollectionById(id: number): Promise<Collection | undefined> {
+	public async CreateCollectionAndAddItem({ ownerId, title, item }: { ownerId: string; title: string; item: Collection }): Promise<Collection | undefined> {
+		try {
+			await client.query('BEGIN');
+
+			const new_collection = await this.CreateNewCollection(ownerId, title);
+			const collection = await this.AddItemToCollection(new_collection?.id!, item);
+
+			await client.query('COMMIT');
+
+			return collection;
+		} catch (error) {
+			console.log(error);
+			await client.query('ROLLBACK');
+		}
+	}
+
+	public async FindCollectionById(id: string): Promise<Collection | undefined> {
 		try {
 			const { rows } = await client.query(`
-				SELECT * FROM public.collections WHERE id = ${id};
-			`);
+				SELECT * FROM public.collections WHERE id = $1;
+			`, [id]);
 
-			return rows[0];
+			const collection = convertJsonArrayToObjectArray(rows[0]);
+
+			return collection;
 		} catch (error) {
 			console.log(error);
 		}
 	}
 
-	public async RetrieveOneCollection(id: number): Promise<Collection | undefined> {
+	public async RetrieveAllUserCollections(ownerId: string): Promise<Collection[] | undefined> {
 		try {
 			const { rows } = await client.query(`
-				SELECT * FROM public.collections WHERE id = ${id};
-			`);
-
-			return rows[0];
-		} catch (error) {
-			console.log(error);
-		}
-	}
-
-	public async RetrieveAllUserCollections(ownerId: number): Promise<Collection[] | undefined> {
-		try {
-			const { rows } = await client.query(`
-				SELECT * FROM public.collections WHERE owner_id = ${ownerId} ORDER BY id ASC;
-			`);
+				SELECT * FROM public.collections WHERE owner_id = $1 ORDER BY id ASC;
+			`, [ownerId]);
 
 			return rows;
 		} catch (error) {
@@ -50,11 +57,11 @@ class CollectionModel {
 		}
 	}
 
-	public async ChangeCollectionTitle(id: number, newTitle: string): Promise<Collection | undefined> {
+	public async ChangeCollectionTitle(id: string, newTitle: string): Promise<Collection | undefined> {
 		try {
 			const { rows } = await client.query(`
-				UPDATE public.collections SET title = '${newTitle}' WHERE id = ${id} RETURNING *;
-			`);
+				UPDATE public.collections SET title = $1 WHERE id = $2 RETURNING *;
+			`, [newTitle, id]);
 
 			return rows[0];
 		} catch (error) {
@@ -62,39 +69,16 @@ class CollectionModel {
 		}
 	}
 
-	public async AddMovieToCollection(collection_id: number, movie_id: string): Promise<Collection | undefined> {
+	public async AddItemToCollection(collection_id: string, item: Collection): Promise<Collection | undefined> {
 		try {
 			const collection = await this.FindCollectionById(collection_id) as Collection;
-
-			const updatedCollectionMovies = [
-				...collection.movies_list,
-				movie_id,
-			];
-
-			const { rows } = await client.query(`
-				UPDATE public.collections SET movies_list = ARRAY [${updatedCollectionMovies}] WHERE id = ${collection_id}
-				RETURNING *;
-			`);
-
-			return rows[0];
-		} catch (error) {
-			console.log(error);
-		}
-	}
-
-	public async RemoveMovieFromCollection(collection_id: number, movie_id: string): Promise<Collection | undefined> {
-		try {
-			const collection = await this.FindCollectionById(collection_id) as Collection;
-
-			const updatedCollectionMovies = collection.movies_list.filter((item) => item !== movie_id);
-			const value = updatedCollectionMovies.length ? `ARRAY [${updatedCollectionMovies}]` : 'DEFAULT';
 
 			const { rows } = await client.query(`
 				UPDATE public.collections
-				SET movies_list = ${value}
-				WHERE id = ${collection_id}
+				SET items_list[$1] = $2
+				WHERE id = $3
 				RETURNING *;
-			`);
+			`, [collection.items_list.length, item, collection_id]);
 
 			return rows[0];
 		} catch (error) {
@@ -102,11 +86,30 @@ class CollectionModel {
 		}
 	}
 
-	public async DeleteOneCollection(id: number): Promise<Collection | undefined> {
+	public async RemoveItemFromCollection(collection_id: string, movie_id: number): Promise<Collection | undefined> {
+		try {
+			const collection = await this.FindCollectionById(collection_id) as Collection;
+
+			const updatedCollection = collection.items_list.filter((item) => item.id !== String(movie_id));
+
+			const { rows } = await client.query(`
+				UPDATE public.collections
+				SET movies_list = $1
+				WHERE id = $2
+				RETURNING *;
+			`, [updatedCollection, collection_id]);
+
+			return rows[0];
+		} catch (error) {
+			console.log(error);
+		}
+	}
+
+	public async DeleteOneCollection(id: string): Promise<Collection | undefined> {
 		try {
 			const { rows } = await client.query(`
-				DELETE FROM public.collections WHERE id = ${id} RETURNING *;
-			`);
+				DELETE FROM public.collections WHERE id = $1 RETURNING *;
+			`, [id]);
 
 			return rows[0];
 		} catch (error) {
@@ -114,11 +117,11 @@ class CollectionModel {
 		}
 	}
 
-	public async DeleteAllUserCollections(owner_id: number): Promise<void | undefined> {
+	public async DeleteAllUserCollections(owner_id: string): Promise<void | undefined> {
 		try {
 			await client.query(`
-				DELETE FROM public.collections WHERE owner_id = ${owner_id};
-			`);
+				DELETE FROM public.collections WHERE owner_id = $1;
+			`, [owner_id]);
 		} catch (error) {
 			console.log(error);
 		}

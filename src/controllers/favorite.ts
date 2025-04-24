@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { favoriteModel } from '../models/favorite';
+import { Favorite, FavoriteItem } from '../@types/favorite';
 
 class FavoriteController {
 	public async Retrieve(req: Request, res: Response) {
@@ -12,7 +13,7 @@ class FavoriteController {
 		}
 
 		try {
-			const favorites_list = await favoriteModel.GetFavListById(Number(id));
+			const favorites_list = await favoriteModel.GetFavListById(id);
 
 			if (!favorites_list) {
 				return res.status(400).send({
@@ -30,18 +31,18 @@ class FavoriteController {
 		}
 	}
 
-	public async AddMovie(req: Request, res: Response) {
+	public async AddItem(req: Request, res: Response) {
 		const { id: favListId } = req.params;
-		const { movie_id } = req.body;
+		const { item }: { item: FavoriteItem } = req.body;
 
-		if (!favListId || !movie_id) {
+		if (!favListId || !item.id || !item.type) {
 			return res.status(400).send({
 				message: 'missing or insuficient data',
 			});
 		}
 
 		try {
-			const favList = await favoriteModel.GetFavListById(Number(favListId));
+			const favList: Favorite | null | undefined = await favoriteModel.GetFavListById(favListId);
 
 			if (!favList) {
 				return res.status(404).send({
@@ -49,14 +50,16 @@ class FavoriteController {
 				});
 			}
 
-			const movieAlreadyOnTheList = favList.movies_list.find((m_id) => m_id === movie_id);
+			const movieAlreadyOnTheList = favList.items_list.find(({ id }) => id === item.id);
 
 			if (movieAlreadyOnTheList) return res.status(409).send({ message: 'movie is already in this list' });
 
-			const updatedFavorites = await favoriteModel.AddMovieToFavoritesList(Number(favListId), movie_id);
+			const updatedFavorites = await favoriteModel.AddItemToFavoritesList(favListId, item);
 
 			if (!updatedFavorites) {
-				return res.status(400).send();
+				return res.status(400).send({
+					message: 'cannot add movie to list',
+				});
 			}
 
 			return res.status(200).json({
@@ -69,18 +72,18 @@ class FavoriteController {
 		}
 	}
 
-	public async RemoveMovie(req: Request, res: Response) {
+	public async RemoveItem(req: Request, res: Response) {
 		const { id: favListId } = req.params;
-		const { movie_id } = req.body;
+		const { item_id } = req.body;
 
-		if (!favListId || !movie_id) {
+		if (!favListId || !item_id) {
 			return res.status(400).send({
 				message: 'missing or insuficient data',
 			});
 		}
 
 		try {
-			const favList = await favoriteModel.GetFavListById(Number(favListId));
+			const favList = await favoriteModel.GetFavListById(favListId);
 
 			if (!favList) {
 				return res.status(404).send({
@@ -88,11 +91,11 @@ class FavoriteController {
 				});
 			}
 
-			const movieAlreadyOnTheList = favList.movies_list.find((m_id) => m_id === movie_id);
+			const movieAlreadyOnTheList = favList.items_list.find(({ id }) => id === item_id);
 
 			if (!movieAlreadyOnTheList) return res.status(409).send({ message: 'movie is not on this list' });
 
-			const updatedFavorites = await favoriteModel.RemoveMovieFromFavoritesList(Number(favListId), movie_id);
+			const updatedFavorites = await favoriteModel.RemoveItemFromFavoritesList(favListId, item_id);
 
 			if (!updatedFavorites) {
 				return res.status(400).send();
@@ -102,8 +105,9 @@ class FavoriteController {
 				favorites: updatedFavorites,
 			});
 		} catch (error) {
+			console.log(error);
 			return res.status(400).send({
-				message: 'cannot add movie to list',
+				message: 'cannot remove movie to list',
 			});
 		}
 	}

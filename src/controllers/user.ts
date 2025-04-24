@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { compareHashAndPassword } from '../models/user/utils/compareHashAndPassword';
 import { userModel } from '../models/user';
 import { User } from '../@types/user';
+import { generateJwtToken } from '../utils';
 
 class UserController {
 	public async Register(req: Request, res: Response) {
@@ -11,12 +12,12 @@ class UserController {
 
 		if (!email || !password) {
 			return res.status(400).send({
-				message: 'no data',
+				message: 'missing or insuficient data',
 			});
 		}
 
 		try {
-			const hasAlreadyUsed = await userModel.FindUserByColumn('email', email);
+			const hasAlreadyUsed = await userModel.FindUserByEmail(email);
 
 			if (hasAlreadyUsed) {
 				return res.status(409).send({
@@ -32,9 +33,10 @@ class UserController {
 
 			return res.status(201).json({
 				user: newUser,
-				token: jwt.sign(newUser, process.env.JWT_SECRET_KEY as string),
+				token: generateJwtToken(newUser),
 			});
 		} catch (error) {
+			console.log(error);
 			return res.status(400).send({
 				message: 'unexpected error',
 			});
@@ -51,7 +53,7 @@ class UserController {
 		}
 
 		try {
-			const user = await userModel.FindUserByColumn('email', email);
+			const user = await userModel.FindUserByEmail(email);
 
 			if (!user) {
 				return res.status(404).send({
@@ -70,7 +72,7 @@ class UserController {
 
 			return res.status(200).json({
 				user,
-				token: jwt.sign(user, process.env.JWT_SECRET_KEY as string),
+				token: generateJwtToken(user),
 			});
 		} catch (error) {
 			return res.status(400).send({
@@ -92,7 +94,7 @@ class UserController {
 			const [, token] = authorization.split(' ');
 
 			const { id } = jwt.decode(token) as User;
-			const user = await userModel.FindUserByColumn('id', id);
+			const user = await userModel.FindUserById(id);
 
 			return res.status(200).json({
 				user,
@@ -113,7 +115,7 @@ class UserController {
 		}
 
 		try {
-			const user = await userModel.FindUserByColumn('id', id);
+			const user = await userModel.FindUserById(id);
 
 			if (!user) {
 				return res.status(409).send({
@@ -129,7 +131,7 @@ class UserController {
 				});
 			}
 
-			const updatedUser = await userModel.UpdateUserPassword(Number(id), new_password);
+			const updatedUser = await userModel.UpdateUserPassword(id, new_password);
 
 			if (!updatedUser) {
 				return res.status(400).send();
@@ -137,7 +139,7 @@ class UserController {
 
 			return res.status(200).json({
 				user: updatedUser,
-				token: jwt.sign(updatedUser, process.env.JWT_SECRET_KEY as string),
+				token: generateJwtToken(updatedUser),
 			});
 		} catch (error) {
 			return res.status(400).send({
@@ -155,7 +157,7 @@ class UserController {
 			});
 		}
 
-		const deletedUser = await userModel.DeleteUser(Number(id));
+		const deletedUser = await userModel.DeleteUser(id);
 
 		if (!deletedUser) {
 			return res.status(400).send({
@@ -164,6 +166,18 @@ class UserController {
 		}
 
 		return res.status(200).send();
+	}
+
+	public async DeleteAll(req: Request, res: Response) {
+		try {
+			await userModel.DeleteAllUsers();
+
+			return res.status(200).send();
+		} catch (error) {
+			return res.status(400).send({
+				message: 'cannot delete all users',
+			});
+		}
 	}
 }
 

@@ -6,6 +6,7 @@ export const client = new Client({
 	database: process.env.PGDATABASE,
 	password: process.env.PGPASSWORD,
 	port: Number(process.env.PGPORT),
+	connectionString: process.env.PGCONNECTIONSTRING,
 });
 
 export const connectDb = async () => {

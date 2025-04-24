@@ -6,7 +6,7 @@ const favoriteRoutes: Router = Router();
 
 favoriteRoutes.get('/:id', auth.validate, favoriteController.Retrieve);
 
-favoriteRoutes.patch('/:id/add_movie', auth.validate, favoriteController.AddMovie);
-favoriteRoutes.patch('/:id/remove_movie', auth.validate, favoriteController.RemoveMovie);
+favoriteRoutes.patch('/:id/add_item', auth.validate, favoriteController.AddItem);
+favoriteRoutes.patch('/:id/remove_item', auth.validate, favoriteController.RemoveItem);
 
 export { favoriteRoutes };

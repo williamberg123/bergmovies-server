@@ -8,7 +8,7 @@ class Auth {
 
 		if (!authorization) {
 			return res.status(401).send({
-				message: 'no token',
+				message: 'no authorization token',
 			});
 		}
 
@@ -19,7 +19,7 @@ class Auth {
 				complete: true,
 			});
 
-			const user = await userModel.FindUserByColumn('id', jwtDecoded.payload.id);
+			const user = await userModel.FindUserById(jwtDecoded.payload.id);
 
 			if (!user) return res.status(401).send({ message: 'user not found' });
 
