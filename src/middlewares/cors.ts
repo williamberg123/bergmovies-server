@@ -2,8 +2,8 @@ import { NextFunction, Request, Response } from 'express';
 
 export const cors = (req: Request, res: Response, next: NextFunction) => {
 	const allowedOrigins = [
-		'http://localhost:3000',
-		'http://10.0.0.106:3000',
+		// 'http://localhost:3000',
+		// 'http://10.0.0.106:3000',
 		'https://bergmovies.vercel.app',
 	];
 
